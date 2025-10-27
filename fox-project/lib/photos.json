@@ -1,0 +1,46 @@
+{
+  "photos": [
+    {
+      "id": "1",
+      "url": "https://picsum.photos/id/1011/800/600",
+      "author": "A. Fox",
+      "caption": "Sunset over the hills",
+      "timestamp": "2025-10-20T12:00:00Z"
+    },
+    {
+      "id": "2",
+      "url": "https://picsum.photos/id/1015/800/600",
+      "author": "B. Doe",
+      "caption": "City skyline reflection",
+      "timestamp": "2025-09-15T08:30:00Z"
+    },
+    {
+      "id": "3",
+      "url": "https://picsum.photos/id/1025/800/600",
+      "author": "C. Hart",
+      "caption": "Forest trail in autumn",
+      "timestamp": "2025-08-01T17:45:00Z"
+    },
+    {
+      "id": "4",
+      "url": "https://picsum.photos/id/1035/800/600",
+      "author": "D. Lane",
+      "caption": "Misty mountain lake",
+      "timestamp": "2025-07-11T06:15:00Z"
+    },
+    {
+      "id": "5",
+      "url": "https://picsum.photos/id/1043/800/600",
+      "author": "E. Park",
+      "caption": "Wildflowers closeup",
+      "timestamp": "2025-06-03T14:20:00Z"
+    },
+    {
+      "id": "6",
+      "url": "https://picsum.photos/id/1052/800/600",
+      "author": "F. Quinn",
+      "caption": "Street musician at dusk",
+      "timestamp": "2025-05-23T19:05:00Z"
+    }
+  ]
+}
