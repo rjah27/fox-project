@@ -18,7 +18,7 @@ export class PhotoCard extends LitElement {
   constructor() {
     super();
     this.photo = null;
-    this.liked = "none"; // "like" | "dislike" | "none"
+    this.liked = "none";
   }
 
   static get styles() {
@@ -109,7 +109,7 @@ export class PhotoCard extends LitElement {
 
   render() {
     if (!this.photo) {
-      return html`<div>Loading…</div>`;
+      return html`<div>Loading</div>`;
     }
 
     return html`
