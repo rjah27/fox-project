@@ -126,14 +126,14 @@ export class FoxProject extends DDDSuper(I18NMixin(LitElement)) {
                   </div>
 
                   <div class="actions">
-                    <button class="control" @click=${() => this.like(photo.id)} title="Like">👍</button>
+                    <button class="control" @click=${() => this.like(photo.id)} title="Like">Like</button>
                     <span class="count">${photo.likes ?? 0}</span>
-                    <button class="control" @click=${() => this.dislike(photo.id)} title="Dislike">👎</button>
+                    <button class="control" @click=${() => this.dislike(photo.id)} title="Dislike">Dislike</button>
                     <span class="count">${photo.dislikes ?? 0}</span>
                   </div>
 
                   <div class="share">
-                    <button class="control" @click=${() => this.copyShareLink(photo.id)}>Copy Share Link</button>
+                    <button class="control" @click=${() => this.copyShareLink(photo.id)}>Copy Link</button>
                   </div>
                 </div>
 
@@ -148,22 +148,22 @@ export class FoxProject extends DDDSuper(I18NMixin(LitElement)) {
 
   connectedCallback() {
     super.connectedCallback && super.connectedCallback();
-    this._loadPhotos();
+    this.loadPhotos();
   }
 
-  async _loadPhotos() {
+  loadPhotos() {
     try {
-      
-      const total = 51;
-      const now = new Date();
-      const generated = Array.from({ length: total }, (_, i) => {
-        const id = i + 1;
+
+      var total = 51;
+      var now = new Date();
+      var generated = Array.from({ length: total }, function (_, i) {
+        var id = i + 1;
         return {
           id: String(id),
-          url: '', // will be filled by fetchImageForIndex when needed
+          url: '',
           author: 'Random Fox',
-          caption: `Fox ${id}`,
-          timestamp: new Date(now.getTime() - i * 86400000).toISOString(), // stagger dates
+          caption: 'Fox ' + id,
+          timestamp: new Date(now.getTime() - i * 86400000).toISOString(),
           likes: 0,
           dislikes: 0,
           loaded: false
@@ -171,27 +171,17 @@ export class FoxProject extends DDDSuper(I18NMixin(LitElement)) {
       });
 
       this.photos = generated;
-
-      // If URL contains ?fox=NN, restore that index
-      const params = new URLSearchParams(window.location.search);
-      const foxNum = parseInt(params.get('fox'));
-      const imgParam = params.get('img'); // optional: specific fetched image id
+      var params = new URLSearchParams(window.location.search);
+      var foxNum = parseInt(params.get('fox'));
+      var imgParam = params.get('img');
 
       if (imgParam) {
-        // If the URL includes an explicit image id (from a share link),
-        // put that specific image into the first slot so the link
-        // reproduces the same fox image.
-        const imageId = parseInt(imgParam);
+        var imageId = parseInt(imgParam);
         if (imageId) {
-          const copy = [...this.photos];
-          copy[0] = {
-            ...copy[0],
-            url: `https://randomfox.ca/images/${imageId}.jpg`,
-            imageId: String(imageId),
-            loaded: true,
-            caption: `Fox ${imageId}`
-          };
-          this.photos = copy;
+          this.setSlotImage(0, 'https://randomfox.ca/images/' + imageId + '.jpg', String(imageId));
+          var updated = [...this.photos];
+          updated[0].caption = 'Fox ' + imageId;
+          this.photos = updated;
           this.currentIndex = 0;
         }
       } else if (foxNum && foxNum >= 1 && foxNum <= this.photos.length) {
@@ -200,49 +190,42 @@ export class FoxProject extends DDDSuper(I18NMixin(LitElement)) {
         this.currentIndex = 0;
       }
 
-      // lazy-load the initial image and prefetch the next one
+      // fetch the current image and prefetch the next one
       this.fetchImageForIndex(this.currentIndex);
       if (this.currentIndex + 1 < this.photos.length) {
         this.fetchImageForIndex(this.currentIndex + 1);
       }
     } catch (e) {
-      // keep photos empty on error
       console.error(e);
     }
   }
-
-
-  // Behavior:
-  // - If the slot is already loaded, do nothing.
-  // - Otherwise, call the RandomFox API endpoint and set the
-  //   returned image URL into the slot. If the fetch fails we set
-  //   a predictable fallback URL so the UI still shows an image.
   
-  async fetchImageForIndex(index) {
-   
-    if (!this.photos || !this.photos[index]) return;
-  const slot = this.photos[index];
-    if (slot.loaded && slot.url) return;
-    try {
-     
-      const response = await fetch('https://randomfox.ca/floof/');
-      const data = await response.json();
-      const imageUrl = data.image || data.link || '';
-      let imageId = '';
-      try {
-        const m = imageUrl && imageUrl.match(/\/images\/(\d+)\.jpg/);
-        if (m && m[1]) imageId = String(m[1]);
-      } catch (e) {}
+  fetchImageForIndex(index) {
+  if (!this.photos || !this.photos[index]) return Promise.resolve();
 
-      const copy = [...this.photos];
-      copy[index] = { ...slot, url: imageUrl, imageId, loaded: true };
-      this.photos = copy;
-    } catch (err) {
-      const fallback = `https://randomfox.ca/images/${(index % 51) + 1}.jpg`;
-      const copy = [...this.photos];
-      copy[index] = { ...slot, url: fallback, imageId: String((index % 51) + 1), loaded: true };
-      this.photos = copy;
-    }
+  const slot = this.photos[index];
+  if (slot.loaded && slot.url) return Promise.resolve();
+
+  return fetch('https://randomfox.ca/floof/')
+    .then(res => res.json())
+    .then(json => {
+      const imageUrl = json.image || json.link || '';
+      const match = imageUrl.match(/\/images\/(\d+)\.jpg/);
+      const imageId = match ? match[1] : '';
+      this.setSlotImage(index, imageUrl, imageId);
+    })
+    .catch(() => {
+      const fallbackId = (index % 51) + 1;
+      const fallbackUrl = `https://randomfox.ca/images/${fallbackId}.jpg`;
+      this.setSlotImage(index, fallbackUrl, String(fallbackId));
+    });
+}
+
+  setSlotImage(index, imageUrl, imageId) {
+    const updated = [...this.photos];
+    const slot = updated[index] || {};
+    updated[index] = { ...slot, url: imageUrl, imageId, loaded: true };
+    this.photos = updated;
   }
 
  
@@ -262,48 +245,61 @@ export class FoxProject extends DDDSuper(I18NMixin(LitElement)) {
 
   like(id) {
     if (!id) return;
-    this.photos = this.photos.map(p => p.id === String(id) || p.id === id ? { ...p, likes: (p.likes || 0) + 1 } : p);
+    const idx = this.photos.findIndex(p => p.id === String(id) || p.id === id);
+    if (idx === -1) return;
+    this.incrementSlotField(idx, 'likes', 1);
   }
 
   dislike(id) {
     if (!id) return;
-    this.photos = this.photos.map(p => p.id === String(id) || p.id === id ? { ...p, dislikes: (p.dislikes || 0) + 1 } : p);
+    const idx = this.photos.findIndex(p => p.id === String(id) || p.id === id);
+    if (idx === -1) return;
+    this.incrementSlotField(idx, 'dislikes', 1);
   }
 
-  // copy a shareable link to the clipboard (simple fallback included)
-  async copyShareLink(id) {
-    const photo = (this.photos && this.photos[this.currentIndex]) || null;
+  incrementSlotField(index, field, amount = 1) {
+    const updated = [...this.photos];
+    const slot = updated[index] || {};
+    const current = Number(slot[field] || 0);
+    updated[index] = { ...slot, [field]: current + amount };
+    this.photos = updated;
+  }
+
+  copyShareLink(id) {
+    var photo = (this.photos && this.photos[this.currentIndex]) || null;
     if (!photo) return;
 
-    if (!photo.imageId) {
-      // ensure the slot has a fetched image id before sharing
+    function doCopy() {
+      var updatedPhoto = (this.photos && this.photos[this.currentIndex]) || photo;
+      var shareId = updatedPhoto.imageId || updatedPhoto.id;
+      var url = window.location.origin + window.location.pathname + '?img=' + encodeURIComponent(shareId);
+
       try {
-        await this.fetchImageForIndex(this.currentIndex);
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(url).catch(function () {});
+        }
       } catch (e) {
-        // ignore fetch errors; we'll fall back to slot id below
+      }
+
+      try {
+        var u = new URL(window.location.href);
+        u.searchParams.set('img', shareId);
+        window.history.replaceState({}, '', u);
+      } catch (e) {
       }
     }
 
-    const updatedPhoto = (this.photos && this.photos[this.currentIndex]) || photo;
-    const shareId = updatedPhoto.imageId || updatedPhoto.id;
-    const url = `${window.location.origin}${window.location.pathname}?img=${encodeURIComponent(shareId)}`;
-
-    try {
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        await navigator.clipboard.writeText(url);
-      }
-      // update the URL in the address bar to the share link
-      const u = new URL(window.location.href);
-      u.searchParams.set('img', shareId);
-      window.history.replaceState({}, '', u);
-    } catch (e) {
-      console.error('copy failed', e);
+    if (!photo.imageId) {
+      var self = this;
+      this.fetchImageForIndex(this.currentIndex).then(function () {
+        doCopy.call(self);
+      }).catch(function () {
+        doCopy.call(self);
+      });
+    } else {
+      doCopy.call(this);
     }
   }
-
-  /**
-   * haxProperties integration via file reference
-   */
   static get haxProperties() {
     return new URL(`./lib/${this.tag}.haxProperties.json`, import.meta.url)
       .href;
